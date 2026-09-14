@@ -166,7 +166,7 @@ void free_event_loop(event_loop* loop)
     if (loop != NULL)
     {
         free_task_list(loop->list);
-        free_event_loop(loop->events);
+        free_event_queue(loop->events);
         free(loop);
     }
 }
