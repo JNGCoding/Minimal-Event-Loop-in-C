@@ -31,14 +31,47 @@ typedef struct
 } task_list;
 
 // Task list
+
+/**
+ * @brief Initializes a new task list on the heap and returns it
+ * @returns an empty instance of task_list by pointer, if failed returns NULL
+ */
 task_list* create_task_list();
+
+/**
+ * @brief Deallocates a task list allocated on the heap free-ing all its nodes, the value that each node hold may individually be freed by the programmer
+ */
 void free_task_list(task_list* tlist);
+
+/**
+ * @brief Appends a task to the task list
+ * @return true if operation was successful else false
+ */
 bool submit_task(task* t, task_list* tlist);
+
+/**
+ * @brief Removes a task from the task list at a provided `index`
+ * @return true if operation was successful else false
+ */
 bool remove_task(size_t index, task_list* tlist);
+
+/**
+ * @brief Retrieves a node at `index` and returns it
+ * @return returns the node by pointer if present else NULL
+ */
 task_list_node* get_node(size_t index, task_list* tlist);
+
+/**
+ * @brief Retrieves a task in the task list at `index` and returns it
+ * @return returns the task by pointer if present else NULL
+ */
 task* get_task(size_t index, task_list* tlist);
 
 // Event Queue
+
+/**
+ * @brief Holds all the possible events that can be passed to the event queue
+ */
 typedef enum
 {
     NO_EVENT,
@@ -46,7 +79,12 @@ typedef enum
     BREAK_OUT_OF_LOOP
 } event;
 
+// Modify this macro, to increase the total events that the event_queue can hold
 #define EVENT_QUEUE_SIZE 4096
+
+/**
+ * @brief Basic implementation of normal queue meant to handle events
+ */
 typedef struct
 {
     event events[EVENT_QUEUE_SIZE];
@@ -55,13 +93,34 @@ typedef struct
     size_t writeptr;
 } event_queue;
 
+/**
+ * @brief Initializes a new event_queue on the heap and returns it
+ * @return a new empty instance of event_queue by pointer, if failed returns NULL
+ */
 event_queue* create_event_queue();
+
+/**
+ * @brief Deallocates an event_queue allocated on the heap
+ */
 void free_event_queue(event_queue* equeue);
+
+/**
+ * @brief Pushes an event onto the queue
+ * @return true if the operation was successful else false
+ */
 bool push_event(event e, event_queue* equeue);
+
+/**
+ * @brief pops an event out of the queue
+ * @return event if an event was present else NO_EVENT 
+ */
 event pop_event(event_queue* equeue);
 
 // Event Loop
 
+/**
+ * @brief basic data structure to maintain an event loop
+ */
 typedef struct
 {
     task_list* list;
@@ -70,10 +129,27 @@ typedef struct
     bool running;
 } event_loop;
 
+/**
+ * @brief calculates and returns the total milli-seconds passed from a start point
+ * @return the milli-seconds passed as size_t
+ */
 size_t millis(clock_t start);
 
+/**
+ * @brief Allocates an event_loop with the task list and event queue provided on the heap and returns it
+ * @return an instance of event_loop by pointer, if failed returns NULL
+ */
 event_loop* create_event_loop(task_list* tlist, event_queue* equeue);
+
+/**
+ * @brief Deallocates an event_loop allocated on the heap
+ */
 void free_event_loop(event_loop* loop);
+
+/**
+ * @brief Executes the loop. It is blocking so any code after this function
+ * will not be executed unless explicitly broke out of using `BREAK_OUT_OF_LOOP` event
+ */
 void loop_execute(event_loop* loop);
 
 

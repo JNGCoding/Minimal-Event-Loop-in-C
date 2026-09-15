@@ -78,6 +78,9 @@ bool remove_task(size_t index, task_list* tlist)
 
 task_list_node* get_node(size_t index, task_list* tlist)
 {
+    if (index >= tlist->size)
+        return NULL;
+
     task_list_node* cur = tlist->head;
     for (size_t i = 0; i < (tlist->size - index - 1); i++)
         cur = cur->prev;
@@ -86,6 +89,9 @@ task_list_node* get_node(size_t index, task_list* tlist)
 
 task* get_task(size_t index, task_list* tlist)
 {
+    if (index >= tlist->size)
+        return NULL;
+        
     task_list_node* cur = tlist->head;
     for (size_t i = 0; i < (tlist->size - index - 1); i++)
         cur = cur->prev;
