@@ -8,23 +8,50 @@
 #include <time.h>
 #include <windows.h>
 
-typedef void(*runnable)(void);
+// Macro to easily define a task
+// task = pointer to the task
+// time = time interval
+// params = parameters to pass to the function each call by pointer
+// priority = task priority
+#define make_task(task, time, params, priority) (struct task_t) {task, params, priority, time, 0, false}
 
-typedef struct
+// Use this macro to easily define a runnable task
+// name = name of the function
+// param = name of the void*
+#define task_define(name, param) void name(void* param)
+
+typedef void(*runnable)(void*);
+
+// Basic enum specifying three task priorities
+// priorities with lower enum numbers are higher and that with higher enum numbers are lower
+typedef enum task_priority_t
+{
+    TOP_PRIORITY,
+    MID_PRIORITY,
+    BOT_PRIORITY
+} task_priority;
+
+// Task control block
+// Holds important information for scheduling
+typedef struct task_t
 {
     runnable run;
+    void* parameters;
+    task_priority priority;
     size_t time;
-
     clock_t start;
+    bool skip;
 } task;
 
-typedef struct tln
+// A wrapper around task for insertion/deletion operation in task_list
+typedef struct task_list_node_t
 {
     task* value;
-    struct tln* prev;
+    struct task_list_node_t* prev;
 } task_list_node;
 
-typedef struct
+// Priority sorted singly linked list to store all list
+typedef struct task_list_t
 {
     task_list_node* head;
     size_t size;
@@ -50,6 +77,13 @@ void free_task_list(task_list* tlist);
 bool submit_task(task* t, task_list* tlist);
 
 /**
+ * @brief Inserts a task to the task list at the specified index
+ * @return true if operation was successful else false
+ * @warning This function is used in the inner workings of the library, don't use it as it might break the priority system
+ */
+bool insert_task(task* t, size_t index, task_list* tlist);
+
+/**
  * @brief Removes a task from the task list at a provided `index`
  * @return true if operation was successful else false
  */
@@ -72,11 +106,12 @@ task* get_task(size_t index, task_list* tlist);
 /**
  * @brief Holds all the possible events that can be passed to the event queue
  */
-typedef enum
+typedef enum event_t
 {
     NO_EVENT,
     DELETE_CURRENT_TASK,
-    BREAK_OUT_OF_LOOP
+    BREAK_OUT_OF_LOOP,
+    SKIP_NEXT
 } event;
 
 // Modify this macro, to increase the total events that the event_queue can hold
@@ -85,7 +120,7 @@ typedef enum
 /**
  * @brief Basic implementation of normal queue meant to handle events
  */
-typedef struct
+typedef struct event_queue_t
 {
     event events[EVENT_QUEUE_SIZE];
     size_t current_size;
@@ -121,11 +156,10 @@ event pop_event(event_queue* equeue);
 /**
  * @brief basic data structure to maintain an event loop
  */
-typedef struct
+typedef struct event_loop_t
 {
     task_list* list;
     event_queue* events;
-    clock_t start_time;
     bool running;
 } event_loop;
 
@@ -151,6 +185,5 @@ void free_event_loop(event_loop* loop);
  * will not be executed unless explicitly broke out of using `BREAK_OUT_OF_LOOP` event
  */
 void loop_execute(event_loop* loop);
-
 
 #endif

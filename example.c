@@ -5,47 +5,55 @@
 
 // Global variables
 task_list* tasks;
-event_queue* equeue;
+event_queue* events;
 event_loop* loop;
 
 // Some tasks
-void print_hello() {
-    static int i = 5;
-    printf("print_hello() - hello, world\n");
-
-    i--;
-    if (i == 0)
-        push_event(DELETE_CURRENT_TASK, equeue);
+task_define(print_goodbye, param) {
+    printf("print_goodbye() - goodbye, world\n");
+    push_event(DELETE_CURRENT_TASK, events);
 }
 
-void print_hell()  {
-    static int i = 10;
-    printf("print_hell() - world is hell\n");
-
-    i--;
-    if (i == 0)
-        push_event(BREAK_OUT_OF_LOOP, equeue);
+task_define(print_heaven, param) {
+    printf("print_heaven() - world is heaven\n");
+    push_event(DELETE_CURRENT_TASK, events);
 }
 
-task task1 = {&print_hello, 500, 0};
-task task2 = {&print_hell, 1000, 0};
+task_define(print_chaos, param) {
+    printf("print_chaos() - chaos everywhere\n");
+    push_event(DELETE_CURRENT_TASK, events);
+}
+
+task_define(print_peace, param) {
+    printf("print_peace() - peace restored\n");
+    push_event(DELETE_CURRENT_TASK, events);
+}
+
+// Creating tasks, (func, timer, parameters, priority)
+// higher priority tasks will be checked and launched before lower priorityones
+// same timers have been given to demostrate that
+task task1 = make_task(&print_goodbye, 1000, NULL, TOP_PRIORITY);
+task task2 = make_task(&print_heaven, 1000, NULL, TOP_PRIORITY);
+task task3 = make_task(&print_chaos, 1000, NULL, BOT_PRIORITY);
+task task4 = make_task(&print_peace, 1000, NULL, TOP_PRIORITY);
 
 int main(int argc, const char* argv[])
 {
     // Initialize
     tasks = create_task_list();
-    assert (tasks != NULL && "tasks is null");
+    assert(tasks != NULL && "tasks is null");
 
-    equeue = create_event_queue();
-    assert (equeue != NULL && "equeue is null");
+    events = create_event_queue();
+    assert(events != NULL && "events is null");
 
-    loop = create_event_loop(tasks, equeue);
-    assert (loop != NULL && "loop is null");
-
+    loop = create_event_loop(tasks, events);
+    assert(loop != NULL && "loop is null");
 
     // Create the tasks
     submit_task(&task1, tasks);
     submit_task(&task2, tasks);
+    submit_task(&task3, tasks);
+    submit_task(&task4, tasks);
 
     // Execute
     loop_execute(loop);

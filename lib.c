@@ -25,8 +25,11 @@ void free_task_list(task_list* tlist)
     }
 }
 
-bool submit_task(task* t, task_list* list)
+bool insert_task(task* t, size_t index, task_list* tlist)
 {
+    if (index > tlist->size)
+        return false;
+
     task_list_node* val = (task_list_node*) malloc(sizeof(task_list_node));
     if (val == NULL)
         return false;
@@ -34,18 +37,69 @@ bool submit_task(task* t, task_list* list)
     val->value = t;
     val->prev = NULL;
 
-    if (list->head == NULL)
+    if (index == tlist->size || index == tlist->size - 1)
     {
-        list->head = val;
+        if (tlist->head == NULL)
+        {
+            tlist->head = val;
+        }
+        else
+        {
+            val->prev = tlist->head;
+            tlist->head = val;
+        }
+
+        tlist->size++;
+        return true;
+    }
+
+    task_list_node* next = get_node(index + 1, tlist);
+    task_list_node* curr = next->prev;
+
+    next->prev = val;
+    val->prev = curr;
+
+    tlist->size++;
+
+    return true;
+}
+
+bool submit_task(task* t, task_list* tlist)
+{
+    // Since the event loop executes from the head of the list
+    // <BOT_PRIORITY> <TOP_PRIORITY>
+
+    if (tlist->head == NULL)
+    {
+        task_list_node* val = (task_list_node*) malloc(sizeof(task_list_node));
+        if (val == NULL)
+            return false;
+
+        val->value = t;
         val->prev = NULL;
+
+        tlist->head = val;
+        tlist->size++;
     }
     else
     {
-        val->prev = list->head;
-        list->head = val;
-    }
+        task_list_node* cur = tlist->head;
+        size_t insert_index = tlist->size - 1;
 
-    list->size++;
+        // Insertion sort into the right priority index
+        for (;; insert_index--)
+        {
+            if (t->priority <= cur->value->priority)
+                break;
+
+            if (insert_index == 0)
+                break;
+
+            cur = cur->prev;
+        }
+
+        insert_task(t, insert_index, tlist);
+    }
 
     return true;
 }
@@ -161,7 +215,6 @@ event_loop* create_event_loop(task_list* tlist, event_queue* equeue)
 
     loop->list = tlist;
     loop->events = equeue;
-    loop->start_time = clock();
     loop->running = false;
 
     return loop;
@@ -181,20 +234,23 @@ void loop_execute(event_loop* loop)
 {
     task_list* tlist = loop->list;
     event_queue* equeue = loop->events;
-    clock_t lstart_time = loop->start_time;
 
     loop->running = true;
 
     while (loop->running)
     {
         task_list_node* cur = tlist->head;
-    
-        for (size_t i = 0; i < tlist->size; i++)
+        size_t task_index = tlist->size - 1;
+
+        while (cur != NULL)
         {
             if (millis(cur->value->start) >= cur->value->time)
             {
-                cur->value->run();
+                if (!cur->value->skip)
+                    cur->value->run(cur->value->parameters);
+
                 cur->value->start = clock();
+                if (cur->value->skip) cur->value->skip = false;
             }
 
             event ev = pop_event(equeue);
@@ -204,16 +260,23 @@ void loop_execute(event_loop* loop)
                 {
                     case DELETE_CURRENT_TASK: {
                         cur = cur->prev;
-                        remove_task(tlist->size - i - 1, tlist);
+                        remove_task(task_index, tlist);
+                        task_index--;
                     } continue;
 
                     case BREAK_OUT_OF_LOOP: {
                         loop->running = false;
                     } break;
+
+                    case SKIP_NEXT: {
+                        cur->value->skip = true;
+                    } break;
                 }
             } else cur = cur->prev;
-        }
 
+            task_index--;
+        }
+    
         // Sleep for 1 milli-second to avoid busy-waiting
         Sleep(1);
     }
