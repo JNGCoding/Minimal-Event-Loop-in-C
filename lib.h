@@ -7,20 +7,24 @@
 #include <stdbool.h>
 #include <time.h>
 #include <windows.h>
+#include <string.h>
 
 // Macro to easily define a task
+// name = name of the task
 // task = pointer to the task
 // time = time interval
 // params = parameters to pass to the function each call by pointer
 // priority = task priority
-#define make_task(task, time, params, priority) (struct task_t) {task, params, priority, time, 0, false}
+#define make_task(name, task, time, params, priority) (struct task_t) {name, task, params, priority, time, 0, false}
 
 // Use this macro to easily define a runnable task
 // name = name of the function
 // param = name of the void*
-#define task_define(name, param) void name(void* param)
+#define define_task(name, param) void name(void* param)
 
 typedef void(*runnable)(void*);
+
+// you can add or remove any number of priorities but you should have atleast one priority level
 
 // Basic enum specifying three task priorities
 // priorities with lower enum numbers are higher and that with higher enum numbers are lower
@@ -35,11 +39,21 @@ typedef enum task_priority_t
 // Holds important information for scheduling
 typedef struct task_t
 {
+    // Name of the task
+    const char* name;
+
+    // Function parameters
     runnable run;
     void* parameters;
+
+    // Priority of the task
     task_priority priority;
+
+    // Timing variables of the task
     size_t time;
     clock_t start;
+
+    // State variables of the task
     bool skip;
 } task;
 
@@ -101,6 +115,17 @@ task_list_node* get_node(size_t index, task_list* tlist);
  */
 task* get_task(size_t index, task_list* tlist);
 
+/**
+ * @brief Retrieves a task in the task list by its name and returns it
+ * @return returns the task by pointer if present else NULL
+ */
+task* get_task_by_name(const char* name, task_list* tlist);
+
+/**
+ * @brief prints the task list on stdout
+ */
+void print_task_list(task_list* tlist);
+
 // Event Queue
 
 /**
@@ -109,10 +134,20 @@ task* get_task(size_t index, task_list* tlist);
 typedef enum event_t
 {
     NO_EVENT,
-    DELETE_CURRENT_TASK,
-    BREAK_OUT_OF_LOOP,
-    SKIP_NEXT
-} event;
+    DELETE_CURRENT_TASK,        // Delete the latest ran task from the task list
+    BREAK_OUT_OF_LOOP,          // Break out of the loop after task_list execution
+    SKIP_NEXT,                  // Skip next iteration of the latest ran task
+} event_types;
+
+typedef struct loop_event_t
+{
+    event_types event;
+    const char* refer;
+} loop_event;
+
+static const loop_event NO_LOOP_EVENT = {NO_EVENT, NULL};
+
+#define make_event(event_type, reference) (struct loop_event_t) {event_type, reference}
 
 // Modify this macro, to increase the total events that the event_queue can hold
 #define EVENT_QUEUE_SIZE 4096
@@ -122,10 +157,8 @@ typedef enum event_t
  */
 typedef struct event_queue_t
 {
-    event events[EVENT_QUEUE_SIZE];
-    size_t current_size;
-    size_t readptr;
-    size_t writeptr;
+    loop_event events[EVENT_QUEUE_SIZE];
+    size_t current_size, readptr, writeptr;
 } event_queue;
 
 /**
@@ -143,13 +176,13 @@ void free_event_queue(event_queue* equeue);
  * @brief Pushes an event onto the queue
  * @return true if the operation was successful else false
  */
-bool push_event(event e, event_queue* equeue);
+bool push_event(loop_event e, event_queue* equeue);
 
 /**
  * @brief pops an event out of the queue
  * @return event if an event was present else NO_EVENT 
  */
-event pop_event(event_queue* equeue);
+loop_event pop_event(event_queue* equeue);
 
 // Event Loop
 

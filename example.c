@@ -9,33 +9,33 @@ event_queue* events;
 event_loop* loop;
 
 // Some tasks
-task_define(print_goodbye, param) {
+define_task(print_goodbye, param) {
     printf("print_goodbye() - goodbye, world\n");
-    push_event(DELETE_CURRENT_TASK, events);
+    push_event(make_event(DELETE_CURRENT_TASK, NULL), events);
 }
 
-task_define(print_heaven, param) {
+define_task(print_heaven, param) {
     printf("print_heaven() - world is heaven\n");
-    push_event(DELETE_CURRENT_TASK, events);
+    push_event(make_event(DELETE_CURRENT_TASK, NULL), events);
 }
 
-task_define(print_chaos, param) {
+define_task(print_chaos, param) {
     printf("print_chaos() - chaos everywhere\n");
-    push_event(DELETE_CURRENT_TASK, events);
+    push_event(make_event(DELETE_CURRENT_TASK, NULL), events);
 }
 
-task_define(print_peace, param) {
+define_task(print_peace, param) {
     printf("print_peace() - peace restored\n");
-    push_event(DELETE_CURRENT_TASK, events);
+    push_event(make_event(DELETE_CURRENT_TASK, NULL), events);
 }
 
 // Creating tasks, (func, timer, parameters, priority)
-// higher priority tasks will be checked and launched before lower priorityones
+// higher priority tasks will be checked and launched before lower priority ones
 // same timers have been given to demostrate that
-task task1 = make_task(&print_goodbye, 1000, NULL, TOP_PRIORITY);
-task task2 = make_task(&print_heaven, 1000, NULL, TOP_PRIORITY);
-task task3 = make_task(&print_chaos, 1000, NULL, BOT_PRIORITY);
-task task4 = make_task(&print_peace, 1000, NULL, TOP_PRIORITY);
+task task1 = make_task("task1", &print_goodbye, 1000, NULL, TOP_PRIORITY);
+task task2 = make_task("task2", &print_heaven, 1000, NULL, TOP_PRIORITY);
+task task3 = make_task("task3", &print_chaos, 1000, NULL, BOT_PRIORITY);
+task task4 = make_task("task4", &print_peace, 1000, NULL, BOT_PRIORITY);
 
 int main(int argc, const char* argv[])
 {
@@ -54,6 +54,9 @@ int main(int argc, const char* argv[])
     submit_task(&task2, tasks);
     submit_task(&task3, tasks);
     submit_task(&task4, tasks);
+
+    print_task_list(tasks);
+    printf("\n");
 
     // Execute
     loop_execute(loop);
