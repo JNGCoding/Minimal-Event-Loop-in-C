@@ -22,6 +22,9 @@ typedef struct event_t
     const char* refer;
 } event;
 
+/**
+ * @brief Returns an instance of event allocated on the stack
+ */
 event make_event(event_type type, const char* ref);
 
 #define EVENT_QUEUE_SIZE (4096)
