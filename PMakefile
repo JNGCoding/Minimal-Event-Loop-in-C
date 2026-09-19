@@ -1,0 +1,10 @@
+# Files that we worry about
+TargetFiles = *.c
+Executable = main.exe
+
+# Statements
+Compile = gcc -o {Executable} {TargetFiles}
+Clean = del /s /q {Executable}
+
+# Automatic Execution
+All = {Compile} -> main.exe
